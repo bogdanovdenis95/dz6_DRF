@@ -6,7 +6,6 @@ from datetime import timedelta
 import stripe
 from celery.schedules import crontab
 
-
 env = environ.Env()
 environ.Env.read_env()
 
@@ -16,8 +15,8 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
-STRIPE_TEST_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'your-secret-key')
-STRIPE_TEST_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'your-publishable-key')
+STRIPE_TEST_SECRET_KEY = env('STRIPE_SECRET_KEY', default='your-secret-key')
+STRIPE_TEST_PUBLISHABLE_KEY = env('STRIPE_PUBLISHABLE_KEY', default='your-publishable-key')
 
 # Application definition
 
@@ -86,7 +85,7 @@ WSGI_APPLICATION = "myproject.wsgi.application"
 
 DATABASES = {
     'default': {
-        'ENGINE': env('DATABASE_ENGINE'),
+        'ENGINE': env('DATABASE_ENGINE', default='django.db.backends.postgresql'),
         'NAME': env('DATABASE_NAME'),
         'USER': env('DATABASE_USER'),
         'PASSWORD': env('DATABASE_PASSWORD'),
@@ -144,11 +143,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = 'users.User'
 
 
-REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-
-
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+REDIS_URL = env('REDIS_URL')
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -157,7 +154,7 @@ CELERY_TIMEZONE = 'UTC'
 CELERY_BEAT_SCHEDULE = {
     'deactivate-inactive-users-every-day': {
         'task': 'users.tasks.deactivate_inactive_users',
-        'schedule': crontab(hour=0, minute=0),  # Выполнять каждый день в полночь
+        'schedule': crontab(minute='*/5'),  # Выполнять каждые 5 минут
     },
 }
 
@@ -165,13 +162,13 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # Настройки почты
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='localhost')
-EMAIL_PORT = config('EMAIL_PORT', cast=int, default=25)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default='False') == 'True'
-EMAIL_USE_SSL = config('EMAIL_USE_SSL', default='False') == 'True'
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = env('EMAIL_HOST', default='localhost')
+EMAIL_PORT = env.int('EMAIL_PORT', default=25)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=False)
+EMAIL_USE_SSL = env.bool('EMAIL_USE_SSL', default=False)
 
 SERVER_EMAIL = EMAIL_HOST_USER
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
